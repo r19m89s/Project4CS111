@@ -1,189 +1,125 @@
-#include "fs.h"
-#include "inode.h"
-#include "super.h"
-#include <minix/vfsif.h>
+#ifndef __MFS_PROTO_H__
+#define __MFS_PROTO_H__
 
-typedef struct arrayENT{
-    unsigned int userid;
-    unsigned int key1;
-    unsigned int key2;
-}arrayENT;
-arrayENT  ARRAY[8];
+/* Function prototypes. */
 
-FORWARD _PROTOTYPE( int in_group, (gid_t grp)				);
+/* Structs used in prototypes must be declared as such first. */
+struct buf;
+struct filp;		
+struct inode;
+struct super_block;
 
 
-/*===========================================================================*
- *				fs_chmod				     *
- *===========================================================================*/
-PUBLIC int fs_chmod()
-{
-/* Perform the chmod(name, mode) system call. */
+/* cache.c */
+_PROTOTYPE( zone_t alloc_zone, (dev_t dev, zone_t z)			);
+_PROTOTYPE( void buf_pool, (int bufs)					);
+_PROTOTYPE( void flushall, (dev_t dev)					);
+_PROTOTYPE( void free_zone, (dev_t dev, zone_t numb)			);
+_PROTOTYPE( struct buf *get_block, (dev_t dev, block_t block,int only_search));
+_PROTOTYPE( void invalidate, (dev_t device)				);
+_PROTOTYPE( void put_block, (struct buf *bp, int block_type)		);
+_PROTOTYPE( void set_blocksize, (struct super_block *)			);
+_PROTOTYPE( void rw_scattered, (dev_t dev,
+			struct buf **bufq, int bufqsize, int rw_flag)	);
+_PROTOTYPE( int block_write_ok, (struct buf *bp)			);
 
-  register struct inode *rip;
-  mode_t mode;
+/* inode.c */
+_PROTOTYPE( struct inode *alloc_inode, (dev_t dev, mode_t bits)		);
+_PROTOTYPE( void dup_inode, (struct inode *ip)				);
+_PROTOTYPE( struct inode *find_inode, (dev_t dev, ino_t numb)		);
+_PROTOTYPE( int fs_putnode, (void)					);
+_PROTOTYPE( void init_inode_cache, (void)				);
+_PROTOTYPE( struct inode *get_inode, (dev_t dev, ino_t numb)		);
+_PROTOTYPE( void put_inode, (struct inode *rip)				);
+_PROTOTYPE( void update_times, (struct inode *rip)			);
+_PROTOTYPE( void rw_inode, (struct inode *rip, int rw_flag)		);
 
-  mode = (mode_t) fs_m_in.REQ_MODE;
-  
-  /* Temporarily open the file. */
-  if( (rip = get_inode(fs_dev, (ino_t) fs_m_in.REQ_INODE_NR)) == NULL)
-	  return(EINVAL);
- 
-  if(rip->i_sp->s_rd_only) {
-  	put_inode(rip);
-	return EROFS;
-  }
+/* link.c */
+_PROTOTYPE( int fs_ftrunc, (void)					);
+_PROTOTYPE( int fs_link, (void)						);
+_PROTOTYPE( int fs_rdlink, (void)					);
+_PROTOTYPE( int fs_rename, (void)					);
+_PROTOTYPE( int fs_unlink, (void)					);
+_PROTOTYPE( int truncate_inode, (struct inode *rip, off_t len)		);
 
-  /* Now make the change. Clear setgid bit if file is not in caller's grp */
-  rip->i_mode = (rip->i_mode & ~ALL_MODES) | (mode & ALL_MODES);
-  rip->i_update |= CTIME;
-  IN_MARKDIRTY(rip);
+/* misc.c */
+_PROTOTYPE( int fs_flush, (void)					);
+_PROTOTYPE( int fs_sync, (void)						);
+_PROTOTYPE( int fs_new_driver, (void)					);
 
-  /* Return full new mode to caller. */
-  fs_m_out.RES_MODE = rip->i_mode;
+/* mount.c */
+_PROTOTYPE( int fs_mountpoint, (void)					);
+_PROTOTYPE( int fs_readsuper, (void)                                    );
+_PROTOTYPE( int fs_unmount, (void)					);
 
-  put_inode(rip);
-  return(OK);
-}
+/* open.c */
+_PROTOTYPE( int fs_create, (void)					);
+_PROTOTYPE( int fs_inhibread, (void)					);
+_PROTOTYPE( int fs_mkdir, (void)					);
+_PROTOTYPE( int fs_mknod, (void)					);
+_PROTOTYPE( int fs_slink, (void)					);
 
-
-/*===========================================================================*
- *				fs_chown				     *
- *===========================================================================*/
-PUBLIC int fs_chown()
-{
-  register struct inode *rip;
-  register int r;
-
-  /* Temporarily open the file. */
-  if( (rip = get_inode(fs_dev, (ino_t) fs_m_in.REQ_INODE_NR)) == NULL)
-	  return(EINVAL);
-
-  /* Not permitted to change the owner of a file on a read-only file sys. */
-  r = read_only(rip);
-  if (r == OK) {
-	  rip->i_uid = (uid_t) fs_m_in.REQ_UID;
-	  rip->i_gid = (gid_t) fs_m_in.REQ_GID;
-	  rip->i_mode &= ~(I_SET_UID_BIT | I_SET_GID_BIT);
-	  rip->i_update |= CTIME;
-          IN_MARKDIRTY(rip);
-  }
-
-  /* Update caller on current mode, as it may have changed. */
-  fs_m_out.RES_MODE = rip->i_mode;
-  put_inode(rip);
-  
-  return(r);
-}
+/* path.c */
+_PROTOTYPE( int fs_lookup, (void)					);
+_PROTOTYPE( struct inode *advance, (struct inode *dirp,
+				char string[MFS_NAME_MAX], int chk_perm)	);
+_PROTOTYPE( int search_dir, (struct inode *ldir_ptr, 
+			char string [MFS_NAME_MAX], ino_t *numb, int flag,
+			     int check_permissions)			);	
 
 
-/*===========================================================================*
- *				forbidden				     *
- *===========================================================================*/
-PUBLIC int forbidden(register struct inode *rip, mode_t access_desired)
-{
-/* Given a pointer to an inode, 'rip', and the access desired, determine
- * if the access is allowed, and if not why not.  The routine looks up the
- * caller's uid in the 'fproc' table.  If access is allowed, OK is returned
- * if it is forbidden, EACCES is returned.
- */
+/* protect.c */
+_PROTOTYPE( int fs_chmod, (void)					);
+_PROTOTYPE( int fs_chown, (void)					);
+_PROTOTYPE( int fs_getdents, (void)					);
+_PROTOTYPE( int forbidden, (struct inode *rip, mode_t access_desired)	);
+_PROTOTYPE( int read_only, (struct inode *ip)				);
+_PROTOTYPE( int fs_setkey, (void)					);
 
-  register struct inode *old_rip = rip;
-  register mode_t bits, perm_bits;
-  int r, shift;
+/* read.c */
+_PROTOTYPE( int fs_breadwrite, (void)					);
+_PROTOTYPE( int fs_readwrite, (void)					);
+_PROTOTYPE( void read_ahead, (void)					);
+_PROTOTYPE( block_t read_map, (struct inode *rip, off_t pos)		);
+_PROTOTYPE( zone_t rd_indir, (struct buf *bp, int index)		);
 
-  /* Isolate the relevant rwx bits from the mode. */
-  bits = rip->i_mode;
-  if (caller_uid == SU_UID) {
-	/* Grant read and write permission.  Grant search permission for
-	 * directories.  Grant execute permission (for non-directories) if
-	 * and only if one of the 'X' bits is set.
-	 */
-	if ( (bits & I_TYPE) == I_DIRECTORY ||
-	     bits & ((X_BIT << 6) | (X_BIT << 3) | X_BIT))
-		perm_bits = R_BIT | W_BIT | X_BIT;
-	else
-		perm_bits = R_BIT | W_BIT;
-  } else {
-	if (caller_uid == rip->i_uid) shift = 6;	/* owner */
-	else if (caller_gid == rip->i_gid) shift = 3;	/* group */
-	else if (in_group(rip->i_gid) == OK) shift = 3;	/* other groups */
-	else shift = 0;					/* other */
-	perm_bits = (bits >> shift) & (R_BIT | W_BIT | X_BIT);
-  }
+/* stadir.c */
+_PROTOTYPE( int fs_fstatfs, (void)					);
+_PROTOTYPE( int fs_stat, (void)						);
+_PROTOTYPE( int fs_statvfs, (void)					);
 
-  /* If access desired is not a subset of what is allowed, it is refused. */
-  r = OK;
-  if ((perm_bits | access_desired) != perm_bits) r = EACCES;
+/* super.c */
+_PROTOTYPE( bit_t alloc_bit, (struct super_block *sp, int map, bit_t origin));
+_PROTOTYPE( void free_bit, (struct super_block *sp, int map,
+						bit_t bit_returned)	);
+_PROTOTYPE( unsigned int get_block_size, (dev_t dev)				);
+_PROTOTYPE( struct super_block *get_super, (dev_t dev)			);
+_PROTOTYPE( int read_super, (struct super_block *sp)			);
+_PROTOTYPE( int write_super, (struct super_block *sp)			);
 
-  /* Check to see if someone is trying to write on a file system that is
-   * mounted read-only.
-   */
-  if (r == OK)
-	if (access_desired & W_BIT)
-	 	r = read_only(rip);
+/* stats.c */
+_PROTOTYPE( bit_t count_free_bits, (struct super_block *sp, int map));
+_PROTOTYPE( void blockstats, (u32_t *total, u32_t *free, u32_t *avail));
 
-  if (rip != old_rip) put_inode(rip);
+/* time.c */
+_PROTOTYPE( int fs_utime, (void)					);
 
-  return(r);
-}
+/* utility.c */
+_PROTOTYPE( time_t clock_time, (void)					);
+_PROTOTYPE( unsigned conv2, (int norm, int w)				);
+_PROTOTYPE( long conv4, (int norm, long x)				);
+_PROTOTYPE( void mfs_nul_f, (char *file, int line, char *str, unsigned int len, 
+			     unsigned int maxlen)				);
+_PROTOTYPE( int min, (unsigned int l, unsigned int r)			);
+_PROTOTYPE( int no_sys, (void)						);
+_PROTOTYPE( void sanitycheck, (char *file, int line)			);
+#define SANITYCHECK sanitycheck(__FILE__, __LINE__)
 
+/* write.c */
+_PROTOTYPE( void clear_zone, (struct inode *rip, off_t pos, int flag)	);
+_PROTOTYPE( struct buf *new_block, (struct inode *rip, off_t position)	);
+_PROTOTYPE( void zero_block, (struct buf *bp)				);
+_PROTOTYPE( int write_map, (struct inode *, off_t, zone_t, int)		);
 
-/*===========================================================================*
- *				in_group				     *
- *===========================================================================*/
-PRIVATE int in_group(gid_t grp)
-{
-  int i;
+#endif
 
-  if (credentials.vu_ngroups > NGROUPS_MAX)
-	return(EINVAL);
-
-  for (i = 0; i < credentials.vu_ngroups; i++)
-  	if (credentials.vu_sgroups[i] == grp)
-  		return(OK);
-
-  return(EINVAL);
-}
-
-
-/*===========================================================================*
- *				read_only				     *
- *===========================================================================*/
-PUBLIC int read_only(ip)
-struct inode *ip;		/* ptr to inode whose file sys is to be cked */
-{
-/* Check to see if the file system on which the inode 'ip' resides is mounted
- * read only.  If so, return EROFS, else return OK.
- */
-
-  register struct super_block *sp;
-
-  sp = ip->i_sp;
-  return(sp->s_rd_only ? EROFS : OK);
-}
-PUBLIC int fs_setkey(void){
-	int i = 0;
-	unsigned int key0 = fs_m_in.m1_i1;
-	unsigned int key1 = fs_m_in.m1_i2;
-	if ((key0 ==  0)||(key1 == 0)){printf ("You have given innappropriate key values.\n");return (-1);}
-	for (; i < 8; i++){
-		if (ARRAY[i].key1 == 0){break;}
-		if (ARRAY[i].userid == fs_m_in.REQ_UID){
-			if ((ARRAY[i].key1 == fs_m_in.m1_i1)&&(ARRAY[i].key2 == fs_m_in.m1_i2)){ 
-				return 0;
-			}else{
-				return 2;
-			}
-		}
-	}
-	if (i < 8){
-		ARRAY[i].userid = fs_m_in.REQ_UID;
-		printf ("userid: %u\n", ARRAY[i].userid);
-		ARRAY[i].key1 =  fs_m_in.m1_i1;
-		ARRAY[i].key2 = fs_m_in.m1_i2;
-		return 1;
-	}
-	printf ("There are too many users with associated keys.\n");
-	return 2;
-}
