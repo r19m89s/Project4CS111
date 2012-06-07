@@ -4,6 +4,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <assert.h>
+#include <skeylib.h>
 #include <math.h>
 
 unsigned int from_hex (char *hex_str) {
@@ -17,7 +18,7 @@ unsigned int from_hex (char *hex_str) {
 int main (int argc, char **argv) {
 
   if (argc != 4) {
-    printf ("arguments incorrect\n");
+    printf ("Standard for main arguments:[-d/-e] [hex #] [filename]\n");
     exit (1);
   }
 
@@ -40,7 +41,10 @@ int main (int argc, char **argv) {
   }
 
   /* Get integers from key string */
-  assert (strlen (key) == 16);
+  if (strlen (key) != 16){
+  	printf("The key you have provided isn't long enough.\n");
+  	return (-1);
+  }
   char high_bits[9];
   char low_bits[9];
   int i;
