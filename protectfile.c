@@ -30,9 +30,13 @@ int main (int argc, char **argv) {
 
   unsigned int perms = file_info.st_mode;
 
+  if (e_or_d != 'c' && e_or_d != 'd') {
+    printf ("first arg must be 'e' or 'd'\n");
+    exit (1);
+  }
   if ((perms & 0x200) == 0) {
     printf ("sticky bit not set\n");
-    exit(1);
+    exit (1);
   }
 
   /* Get integers from key string */
@@ -49,6 +53,17 @@ int main (int argc, char **argv) {
 
   unsigned int k0 = from_hex (high_bits);
   unsigned int k1 = from_hex (low_bits);
+
+  int setkeyval = setkey (k0, k1);
+
+  if (setkeyval == 2) {
+    printf ("keys not matched\n");
+    exit (1);
+  }
+  if (setkeyval == 1 && e_or_d == 'd') {
+    printf ("decrypting unencrypted file\n");
+    exit (1);
+  }
 
   return 0;
 }
