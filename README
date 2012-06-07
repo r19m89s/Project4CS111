@@ -1,3 +1,0 @@
-The code in mfs goes into /usr/src/servers/mfs. The code in vfs goes into /usr/src/servers/vfs.
-The callnr.h file goes into /usr/src/include/minix/callnr.h. The file skeylib.h goes into /usr/include.
-The vfsif.h file goes into /usr/src/include/minix. 
