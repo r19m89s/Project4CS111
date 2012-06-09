@@ -6,7 +6,6 @@
 
 #include "arrayent.h"
 
-arrayENT user_array[8];
 
 /*typedef struct arrayENT{
   unsigned int userid;
@@ -36,7 +35,7 @@ PUBLIC int fs_chmod()
   /* Temporarily open the file. */
   if( (rip = get_inode(fs_dev, (ino_t) fs_m_in.REQ_INODE_NR)) == NULL)
     return(EINVAL);
- 
+
   if(rip->i_sp->s_rd_only) {
     put_inode(rip);
     return EROFS;
@@ -177,7 +176,7 @@ PUBLIC int fs_setkey(void){
   if ((key0 ==  0)||(key1 == 0)){printf ("You have given innappropriate key values.\n");return (-1);}
   for (; i < 8; i++){
     if (user_array[i].key1 == 0){break;}
-    if (user_array[i].userid == /*fs_m_in.REQ_UID*/ getuid()){
+    if (user_array[i].userid == /*fs_m_in.REQ_UID*/ credentials.vu_uid){
       if ((user_array[i].key1 == fs_m_in.m1_i1)&&(user_array[i].key2 == fs_m_in.m1_i2)){ 
 	return 0;
       }else{
@@ -186,7 +185,7 @@ PUBLIC int fs_setkey(void){
     }
   }
   if (i < 8){
-    user_array[i].userid = /*fs_m_in.REQ_UID*/ getuid();
+    user_array[i].userid = /*fs_m_in.REQ_UID*/ credentials.vu_uid;
     printf ("userid: %u i: %d\n", user_array[i].userid, i);
     user_array[i].key1 =  fs_m_in.m1_i1;
     user_array[i].key2 = fs_m_in.m1_i2;
