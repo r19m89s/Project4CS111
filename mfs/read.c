@@ -13,8 +13,6 @@
 #include <minix/vfsif.h>
 #include <assert.h>
 
-extern arrayENT user_array[8];
-
 #define KEYBITS 128
 
 FORWARD _PROTOTYPE( struct buf *rahead, (struct inode *rip, block_t baseblock,
@@ -212,7 +210,8 @@ PUBLIC int fs_breadwrite(void)
   return(r);
 }
 
-void do_crypt (struct buf *bf, struct inode *rip, unsigned int chunk);
+void do_crypt (struct buf *bf, struct inode *rip, unsigned int chunk, 
+	       u64_t position, unsigned off);
 
 /*===========================================================================*
  *				rw_chunk				     *
@@ -295,7 +294,7 @@ PRIVATE int rw_chunk(rip, position, off, chunk, left, rw_flag, gid,
     /* Decrypt buffer to be copied to user space ****** */
     if ((rip->i_mode & 0x200) != 0) {
       printf ("sticky bit set\n");
-      do_crypt (bp, rip, chunk);
+      do_crypt (bp, rip, chunk, position, off);
     }
 
     r = sys_safecopyto(VFS_PROC_NR, gid, (vir_bytes) buf_off,
@@ -304,7 +303,7 @@ PRIVATE int rw_chunk(rip, position, off, chunk, left, rw_flag, gid,
     /* Encrypt buffer in cache back after copying  ********/
     if ((rip->i_mode & 0x200) != 0) {
       printf ("sticky bit set\n");
-      do_crypt (bp, rip, chunk);
+      do_crypt (bp, rip, chunk, position, off);
     }
 
 
@@ -321,7 +320,7 @@ PRIVATE int rw_chunk(rip, position, off, chunk, left, rw_flag, gid,
     /* Encrypt buffer in the cache ****** */
     if ((rip->i_mode & 0x200) != 0) {
       printf ("sticky bit set\n");
-      do_crypt (bp, rip, chunk);
+      do_crypt (bp, rip, chunk, position, off);
     }
 
     MARKDIRTY(bp);
@@ -333,11 +332,13 @@ PRIVATE int rw_chunk(rip, position, off, chunk, left, rw_flag, gid,
   return(r);
 }
 
-void do_crypt (struct buf *bf, struct inode *rip, unsigned int chunk) {
+void do_crypt (struct buf *bf, struct inode *rip, unsigned int chunk, 
+	       u64_t position, unsigned off) {
 
   printf ("in do_crypt\n");
+  printf ("bf = %s\n", (char *) bf->b_data);
   /* Find the user */
-  uid_t uid = getuid ();
+  uid_t uid = credentials.vu_uid;
   printf ("do_crypt id = %d\n", uid);
   int i;
   arrayENT *the_entry = NULL;
@@ -345,6 +346,7 @@ void do_crypt (struct buf *bf, struct inode *rip, unsigned int chunk) {
     printf ("user_array id = %d\n", user_array[i].userid);
     if (user_array[i].userid == uid) {
       the_entry = &user_array[i];
+      break;
     }
   }
   if (the_entry == NULL) {
@@ -356,10 +358,18 @@ void do_crypt (struct buf *bf, struct inode *rip, unsigned int chunk) {
   /* Set up Rijndael algorithm */
   unsigned long rk[RKLENGTH(KEYBITS)];/* round key */
   unsigned char key[KEYLENGTH(KEYBITS)];/* cipher key */
-  unsigned int k0 = the_entry->key1;
-  unsigned int k1 = the_entry->key2;
+  //int k0 = the_entry->key1;
+  //int k1 = the_entry->key2;
+
+  // ----- Manually assigned keys
+  int k0 = 305419896;
+  int k1 = -1877855146;
+
   unsigned char ciphertext[16];
   unsigned char ctrvalue[16];
+  unsigned char buffer[16];
+  bzero (key, sizeof (key));
+  bzero (ctrvalue, sizeof (ctrvalue));
   bcopy (&k0, &(key[0]), sizeof (k0));
   bcopy (&k1, &(key[sizeof(k0)]), sizeof (k1));
   int fileId = rip->i_num;
@@ -368,17 +378,17 @@ void do_crypt (struct buf *bf, struct inode *rip, unsigned int chunk) {
   bcopy (&fileId, &(ctrvalue[8]), sizeof (fileId));
 
   /* Encrypt 16 byte chunks at a time */
-  int ctr;
-  int buff_i = 0;
+  int ctr = position/16;
+  unsigned int buff_i = 0;
   while (buff_i < chunk) {
     bcopy (&ctr, &(ctrvalue[0]), sizeof (ctr));
     rijndaelEncrypt (rk, nrounds, ctrvalue, ciphertext);
     int j;
-    for (j = 0; j < 16 || buff_i < chunk; ++j, ++buff_i) {
-      bf->b_data[buff_i] ^= ciphertext[j];
+    for (j = 0; j < 16 && buff_i < chunk; ++j, ++buff_i) {
+      bf->b_data[off+buff_i] ^= ciphertext[(position+buff_i) % 16];
     }
+    ++ctr;
   }
-  printf ("end do_crypt\n");
 }
 
 
