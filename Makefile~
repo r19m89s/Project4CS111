@@ -35,4 +35,4 @@ othersdone :
 
 
 getfiles :
-	scp -r thomasmiller@dhcp-204-134.cruznet.ucsc.edu:~/cmps/cmps111/proj4/Project4CS111/* .
+	scp -r thomasmiller@192.168.0.195:~/cmps/cmps111/proj4/Project4CS111/* .

@@ -13,7 +13,6 @@
 #include <minix/vfsif.h>
 #include <assert.h>
 
-extern arrayENT user_array[8];
 
 #define KEYBITS 128
 
@@ -348,9 +347,7 @@ void do_crypt (struct buf *bf, struct inode *rip, unsigned int chunk) {
     }
   }
   if (the_entry == NULL) {
-    //panic ("user not found\n");
-    printf ("user not found\n");
-    return;
+    panic ("user not found\n");
   }
 
   /* Set up Rijndael algorithm */

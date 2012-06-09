@@ -37,8 +37,6 @@ int main (int argc, char **argv) {
   struct stat file_info;
   stat (filename, &file_info);
 
-  unsigned int perms = file_info.st_mode;
-
   if (e_or_d != 'e' && e_or_d != 'd') {
     printf ("first arg must be 'e' or 'd'\n");
     exit (1);
@@ -62,97 +60,98 @@ int main (int argc, char **argv) {
   unsigned int k0 = from_hex (high_bits);
   unsigned int k1 = from_hex (low_bits);
 
-  int setkeyval = setkey (k0, k1);
+  /*int setkeyval = setkey (k0, k1);
 
-  if (setkeyval == 2) {
+    if (setkeyval == 2) {
     printf ("keys not matched\n");
     exit (1);
-  }
-  if (setkeyval == 1 && e_or_d == 'd') {
+    }
+    if (setkeyval == 1 && e_or_d == 'd') {
     printf ("decrypting unencrypted file\n");
     exit (1);
-  }
-
-  do_crypt (filename, k0, k1);
-
-  char *turn_sticky_on[4] = {"chmod", "+t", filename, NULL};
-  char *turn_sticky_off[4] = {"chmod", "-t", filename, NULL};
-  char **args;
+    }*/
 
   if (e_or_d == 'e') {
-    args = turn_sticky_on;
+    /*if ((file_info.st_mode & 0x200) != 0) {
+      printf ("file already encrypted\n");
+      return 0;
+      }*/
+    do_crypt (filename, k0, k1);
+    chmod (filename, (file_info.st_mode | (0x200)));
   } else {
-    args = turn_sticky_off;
+    if ((file_info.st_mode & 0x200) == 0) {
+      printf ("file not encrypted\n");
+      return 0;
+    }
+    chmod (filename, (file_info.st_mode & (~0x200)));
+    do_crypt (filename, k0, k1);
   }
-
-  execvp (*args, args);
-
   return 0;
 }
 
-void do_crypt (char *filename, int k0, int k1) {
-  unsigned long rk[RKLENGTH(KEYBITS)];/* round key */
-  unsigned char key[KEYLENGTH(KEYBITS)];/* cipher key */
-  char buf[100];
-  int i, nbytes, nwritten , ctr;
-  int totalbytes;
-  int fileId;
-  int fd;
-  int nrounds; /* # of Rijndael rounds */
-  unsigned char filedata[16];
-  unsigned char ciphertext[16];
-  unsigned char ctrvalue[16];
+  void do_crypt (char *filename, int k0, int k1) {
+    unsigned long rk[RKLENGTH(KEYBITS)];/* round key */
+    unsigned char key[KEYLENGTH(KEYBITS)];/* cipher key */
+    char buf[100];
+    int i, nbytes, nwritten , ctr;
+    int totalbytes;
+    int fileId;
+    int fd;
+    int nrounds; /* # of Rijndael rounds */
+    unsigned char filedata[16];
+    unsigned char ciphertext[16];
+    unsigned char ctrvalue[16];
 
-  bcopy (&k0, &(key[0]), sizeof (k0));
-  bcopy (&k1, &(key[sizeof(k0)]), sizeof (k1));
+    bcopy (&k0, &(key[0]), sizeof (k0));
+    bcopy (&k1, &(key[sizeof(k0)]), sizeof (k1));
 
-  nrounds = rijndaelSetupEncrypt(rk, key, KEYBITS);
+    nrounds = rijndaelSetupEncrypt(rk, key, KEYBITS);
 
-  fd = open(filename, O_RDWR);
-  if (fd < 0)
-    {
-      fprintf(stderr, "Error opening file %s\n", filename);
-      exit (1);
-    }
-
-  struct stat file_info;
-  stat (filename, &file_info);
-  fileId = (int) file_info.st_ino;
-  bcopy (&fileId, &(ctrvalue[8]), sizeof (fileId));
-
-  for (ctr = 0, totalbytes = 0; /* loop forever */; ctr++)
-    {
-      /* Read 16 bytes (128 bits, the blocksize) from the file */
-      nbytes = read (fd, filedata, sizeof (filedata));
-      if (nbytes <= 0) {
-	break;
-      }
-      if (lseek (fd, totalbytes, SEEK_SET) < 0)
-	{
-	  perror ("Unable to seek back over buffer");
-	  exit (-1);
-	}
-
-      /* Set up the CTR value to be encrypted */
-      bcopy (&ctr, &(ctrvalue[0]), sizeof (ctr));
-
-      /* Call the encryption routine to encrypt the CTR value */
-      rijndaelEncrypt(rk, nrounds, ctrvalue, ciphertext);
-
-      /* XOR the result into the file data */
-      for (i = 0; i < nbytes; i++) {
-	filedata[i] ^= ciphertext[i];
+    fd = open(filename, O_RDWR);
+    if (fd < 0)
+      {
+	fprintf(stderr, "Error opening file %s\n", filename);
+	exit (1);
       }
 
-      /* Write the result back to the file */
-      nwritten = write(fd, filedata, nbytes);
-      if (nwritten != nbytes)
-	{
+    struct stat file_info;
+    stat (filename, &file_info);
+    fileId = (int) file_info.st_ino;
+    bcopy (&fileId, &(ctrvalue[8]), sizeof (fileId));
+
+    for (ctr = 0, totalbytes = 0; /* loop forever */; ctr++)
+      {
+	/* Read 16 bytes (128 bits, the blocksize) from the file */
+	nbytes = read (fd, filedata, sizeof (filedata));
+	if (nbytes <= 0) {
 	  break;
 	}
+	if (lseek (fd, totalbytes, SEEK_SET) < 0)
+	  {
+	    perror ("Unable to seek back over buffer");
+	    exit (-1);
+	  }
 
-      /* Increment the total bytes written */
-      totalbytes += nbytes;
-    }
-  close (fd);
-}
+	/* Set up the CTR value to be encrypted */
+	bcopy (&ctr, &(ctrvalue[0]), sizeof (ctr));
+
+	/* Call the encryption routine to encrypt the CTR value */
+	rijndaelEncrypt(rk, nrounds, ctrvalue, ciphertext);
+
+	/* XOR the result into the file data */
+	for (i = 0; i < nbytes; i++) {
+	  filedata[i] ^= ciphertext[i];
+	}
+
+	/* Write the result back to the file */
+	nwritten = write(fd, filedata, nbytes);
+	if (nwritten != nbytes)
+	  {
+	    break;
+	  }
+
+	/* Increment the total bytes written */
+	totalbytes += nbytes;
+      }
+    close (fd);
+  }

@@ -6,7 +6,6 @@
 
 #include "arrayent.h"
 
-arrayENT user_array[8];
 
 /*typedef struct arrayENT{
   unsigned int userid;
