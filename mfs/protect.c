@@ -157,26 +157,35 @@ PUBLIC int read_only(ip)
   return(sp->s_rd_only ? EROFS : OK);
 }
 PUBLIC int fs_setkey(void){
-
   int i = 0;
   unsigned int key0 = fs_m_in.m1_i1;
   unsigned int key1 = fs_m_in.m1_i2;
-   //printf("setkeyk0 = %d\n", key0);
-   //printf("setkeyk1 = %d\n", key1);
-  if ((key0 ==  0)||(key1 == 0)){printf ("You have given innappropriate key values.\n");return (-1);}
   for (; i < 8; i++){
+    user_array[i].userid = credentials.vu_uid;
+    user_array[i].key1 = key0;
+    user_array[i].key2 = key1;
     if (user_array[i].key1 == 0){break;}
-    if (user_array[i].userid == /*fs_m_in.REQ_UID*/ credentials.vu_uid){
-      if ((user_array[i].key1 == fs_m_in.m1_i1)&&(user_array[i].key2 == fs_m_in.m1_i2)){ 
-	return 0;
-      }else{
-	return 2;
-      }
+    if (user_array[i].userid == /*fs_m_in.REQ_UID */credentials.vu_uid){
+    	if((key0==0)||(key1==0)){
+    		printf("You have given inappropriate key values.\nEncryption has been disabled.\n");
+    		user_array[i].key1 = 0;
+    		user_array[i].key2 = 0;
+    		return 2;
+    	}else {
+    		user_array[i].key1 = key0;
+    		user_array[i].key2 = key1;
+    		return 1;
+    	}if ((user_array[i].key1 == fs_m_in.m1_i1)&&(user_array[i].key2 == fs_m_in.m1_i2))
+    		return 0;
     }
   }
   if (i < 8){
+    if((key0==0)||(key1 == 0)){
+        printf ("You have given inappropriate key values.\n");
+        return 2;
+    }
     user_array[i].userid = /*fs_m_in.REQ_UID*/ credentials.vu_uid;
-    //printf ("userid: %u i: %d\n", user_array[i].userid, i);
+    printf ("userid: %u i: %d\n", user_array[i].userid, i);
     user_array[i].key1 =  fs_m_in.m1_i1;
     user_array[i].key2 = fs_m_in.m1_i2;
     return 1;
