@@ -4,18 +4,6 @@
 #include <minix/vfsif.h>
 #include <pwd.h>
 
-//#include "arrayent.h"
-
-
-/*typedef struct arrayENT{
-  unsigned int userid;
-  unsigned int key1;
-  unsigned int key2;
-}arrayENT;
-arrayENT  ARRAY[8];*/
-
-//extern arrayENT user_array[8];
-
 FORWARD _PROTOTYPE( int in_group, (gid_t grp));
 
 
