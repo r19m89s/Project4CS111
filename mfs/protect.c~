@@ -4,7 +4,7 @@
 #include <minix/vfsif.h>
 #include <pwd.h>
 
-#include "arrayent.h"
+//#include "arrayent.h"
 
 
 /*typedef struct arrayENT{
@@ -14,8 +14,7 @@
 }arrayENT;
 arrayENT  ARRAY[8];*/
 
-
-
+//extern arrayENT user_array[8];
 
 FORWARD _PROTOTYPE( int in_group, (gid_t grp));
 
@@ -35,7 +34,7 @@ PUBLIC int fs_chmod()
   /* Temporarily open the file. */
   if( (rip = get_inode(fs_dev, (ino_t) fs_m_in.REQ_INODE_NR)) == NULL)
     return(EINVAL);
- 
+
   if(rip->i_sp->s_rd_only) {
     put_inode(rip);
     return EROFS;
@@ -170,13 +169,21 @@ PUBLIC int read_only(ip)
   return(sp->s_rd_only ? EROFS : OK);
 }
 PUBLIC int fs_setkey(void){
+
+  // test code -------
+  int j;
+  for (j = 0; j < 8; ++j) {
+    user_array[j].userid = 7;
+  }
+  return 1;
+
   int i = 0;
   unsigned int key0 = fs_m_in.m1_i1;
   unsigned int key1 = fs_m_in.m1_i2;
   if ((key0 ==  0)||(key1 == 0)){printf ("You have given innappropriate key values.\n");return (-1);}
   for (; i < 8; i++){
     if (user_array[i].key1 == 0){break;}
-    if (user_array[i].userid == /*fs_m_in.REQ_UID*/ getuid()){
+    if (user_array[i].userid == /*fs_m_in.REQ_UID*/ credentials.vu_uid){
       if ((user_array[i].key1 == fs_m_in.m1_i1)&&(user_array[i].key2 == fs_m_in.m1_i2)){ 
 	return 0;
       }else{
@@ -185,8 +192,8 @@ PUBLIC int fs_setkey(void){
     }
   }
   if (i < 8){
-    user_array[i].userid = /*fs_m_in.REQ_UID*/ getuid();
-    printf ("userid: %u i: %d\n", user_array[i].userid, i);
+    user_array[i].userid = /*fs_m_in.REQ_UID*/ credentials.vu_uid;
+    //printf ("userid: %u i: %d\n", user_array[i].userid, i);
     user_array[i].key1 =  fs_m_in.m1_i1;
     user_array[i].key2 = fs_m_in.m1_i2;
     return 1;

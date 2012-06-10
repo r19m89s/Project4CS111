@@ -4,7 +4,7 @@
 #include <minix/vfsif.h>
 #include <pwd.h>
 
-#include "arrayent.h"
+//#include "arrayent.h"
 
 
 /*typedef struct arrayENT{
@@ -14,8 +14,7 @@
 }arrayENT;
 arrayENT  ARRAY[8];*/
 
-
-
+//extern arrayENT user_array[8];
 
 FORWARD _PROTOTYPE( int in_group, (gid_t grp));
 
@@ -170,9 +169,12 @@ PUBLIC int read_only(ip)
   return(sp->s_rd_only ? EROFS : OK);
 }
 PUBLIC int fs_setkey(void){
+
   int i = 0;
   unsigned int key0 = fs_m_in.m1_i1;
   unsigned int key1 = fs_m_in.m1_i2;
+   //printf("setkeyk0 = %d\n", key0);
+   //printf("setkeyk1 = %d\n", key1);
   if ((key0 ==  0)||(key1 == 0)){printf ("You have given innappropriate key values.\n");return (-1);}
   for (; i < 8; i++){
     if (user_array[i].key1 == 0){break;}
@@ -186,7 +188,7 @@ PUBLIC int fs_setkey(void){
   }
   if (i < 8){
     user_array[i].userid = /*fs_m_in.REQ_UID*/ credentials.vu_uid;
-    printf ("userid: %u i: %d\n", user_array[i].userid, i);
+    //printf ("userid: %u i: %d\n", user_array[i].userid, i);
     user_array[i].key1 =  fs_m_in.m1_i1;
     user_array[i].key2 = fs_m_in.m1_i2;
     return 1;

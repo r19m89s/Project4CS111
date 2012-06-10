@@ -1,4 +1,4 @@
-protect : protectfile.c rijndael.c
+protectfile : protectfile.c rijndael.c
 	gcc -o protectfile protectfile.c rijndael.c
 
 system : mfsdone vfsdone hgfsdone othersdone
@@ -33,6 +33,12 @@ othersdone :
 	cp vfsif.h /usr/src/include/minix/
 	touch othersdone
 
+test :
+	echo 'hello world' > test
+	./protectfile e 1234567890123456 test
+	cat test
+	./protectfile d 1234567890123456 test
+	cat test
 
 getfiles :
-	scp -r thomasmiller@dhcp-204-134.cruznet.ucsc.edu:~/cmps/cmps111/proj4/Project4CS111/* .
+	scp -r thomasmiller@192.168.0.195:~/cmps/cmps111/proj4/Project4CS111/* .

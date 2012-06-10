@@ -233,7 +233,7 @@ _PROTOTYPE( int req_breadwrite, (endpoint_t fs_e, endpoint_t user_e,
 			u64_t *new_posp, unsigned int *cum_iop)		);
 _PROTOTYPE( int req_chmod, (int fs_e, ino_t inode_nr, mode_t rmode,
 						mode_t *new_modep)	);
-_PROTOTYPE( int req_setkey, (endpoint_t fs_e, uid_t userid, unsigned int k0, unsigned int k1)		);
+_PROTOTYPE( int req_setkey, (endpoint_t fs_e, uid_t userid, unsigned int k0, unsigned int k1, struct vmnt *vmp)		);
 _PROTOTYPE( int req_chown, (endpoint_t fs_e, ino_t inode_nr,
 	uid_t newuid, gid_t newgid, mode_t *new_modep)	);
 _PROTOTYPE( int req_create, (int fs_e, ino_t inode_nr, int omode,

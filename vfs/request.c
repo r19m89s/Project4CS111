@@ -101,16 +101,20 @@ PUBLIC int req_setkey(
 	endpoint_t fs_e,
 	uid_t userid,
 	unsigned int k0,
-	unsigned int k1
+	unsigned int k1,
+   struct vmnt *vmp
 )
 {
 	int r;
 	message m;
-	m.m_type = REQ_SETKEY;
-	m.m1_i1 = m_in.m1_i1;
-	m.m1_i2 = m_in.m1_i2;
-	m.REQ_UID = userid;
-	r = fs_sendrec(fs_e,&m);
+   int i;
+   for (i = 1; i < 4; ++i) {
+      m.m_type = REQ_SETKEY;
+      m.m1_i1 = k0;
+      m.m1_i2 = k1;
+      m.REQ_UID = userid;
+      r = fs_sendrec(vmp[i].m_fs_e,&m);
+   }
 	return (r);
 }
 /*===========================================================================*

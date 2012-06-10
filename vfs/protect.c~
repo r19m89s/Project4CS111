@@ -273,8 +273,6 @@ struct vnode *vp;		/* ptr to inode whose file sys is to be cked */
  */
   return((vp->v_vmnt->m_flags & VMNT_READONLY) ? EROFS : OK);
 }
-
-//---------------------------- setkey
 PUBLIC int do_setkey(){
   struct filp *flp;
   struct vnode *vp;
@@ -285,11 +283,7 @@ PUBLIC int do_setkey(){
   uid_t uid;
 
   flp = NULL;
-   
-   int k0 = m_in.m1_i2;
-   int k1 = m_in.m1_i3;
 
-   
   lookup_init(&resolve, fullpath, PATH_NOFLAGS, &vmp, &vp);
   resolve.l_vmnt_lock = VMNT_WRITE;
   resolve.l_vnode_lock = VNODE_WRITE;
@@ -300,10 +294,9 @@ PUBLIC int do_setkey(){
     return(err_code);
   }
   uid = m_in.owner;
-  //printf("do_set k0 = %d\n", k0);
-   //printf("do_set k1 = %d\n", k1);
-  
-  r = req_setkey(vp->v_fs_e, uid, k0, k1, vmp);
+   // for loop
+   
+  r = req_setkey(vp->v_fs_e, uid, m_in.m1_i1, m_in.m1_i2);
   unlock_vnode(vp);
   unlock_vmnt(vmp);
   put_vnode(vp);

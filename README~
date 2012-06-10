@@ -15,10 +15,3 @@ To see that a file you encrypted is actually encrypted,
 you'll either have to log in as another user to look at
 it, or copy it to a different machine to see that it's 
 actually garbage.
-
-NOTE: Sometimes upon restart the system calls aren't actually
-installed for some reason. Just restart it again.
-
-Protectfile errors on keys that aren't 16 characters long,
-because it wasn't specified that we had to pad with zeros in
-the assignment specifications, and it is currently 4:00 on Sunday.
